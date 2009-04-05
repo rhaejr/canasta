@@ -67,16 +67,7 @@ class HumanPlayer:
 		elif event.key == K_LSHIFT:
 		    self.lshiftDown = 1        
 		elif event.key == K_RSHIFT:
-		    self.rshiftDown = 1        
-		elif event.key == 122 and (self.lctrlDown or self.rctrlDown):                        
-			g.popHistory()
-		elif event.key == 116 and (self.lctrlDown or self.rctrlDown):                        
-		    if popsingle:
-			popsingle = 0
-		    else:
-			popsingle = 1
-		elif event.key == 111:
-		    g.sortSelection()
+		    self.rshiftDown = 1   
 		elif event.key == 110 and (self.lctrlDown or self.rctrlDown):  
 		    ccode = CLEAR_STAGE
 		elif event.key == 109:
@@ -98,10 +89,6 @@ class HumanPlayer:
 		elif event.key == K_F1:
 		    if self.mode == self.NOTHING:                      
 			self.viewhelp = 1
-		elif event.key == K_F3:
-		    g.pushHistory("Setup Canasta")
-		    g.initCanasta(0,0)
-		    gameon = True
 		elif event.key == K_F10:
 		    g.handLayout()
 		    g.meldLayout()
