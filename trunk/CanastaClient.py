@@ -36,11 +36,12 @@ class CanastaClient(pb.Referenceable):
 	self.names = [name]
 	pygame.init()
 	self.menuback = pygame.image.load("./cards/titlescreen.gif").convert()
-	self.screen = pygame.display.set_mode((1024,768),HWSURFACE|RESIZABLE)
+	self.screen = pygame.display.set_mode((1024,768))
 	self.g = CanastaRound()
 	self.p = HumanPlayer()
 	self.factory = ReconnectingPBClientFactory()
 	self.port = 7171
+	self.rejected = False
 	self.connected = False
 	self.starting = False
 	self.start_game = False
@@ -58,14 +59,14 @@ class CanastaClient(pb.Referenceable):
 	self.id = UUID(id)
 
     def callDebug(self,obj):
-	obj.callRemote("debug")
+	if DEBUGGER: obj.callRemote("debug")
 
     def remote_debug(self):
 	self.g.roundOver=True
 
     def Connect(self,obj):
 	print "connection established"
-	obj.callRemote("joinServer",self,self.name,str(self.id)).addCallback(self.isController)
+	obj.callRemote("joinServer",self,self.name,str(self.id),VERSION).addCallback(self.isController)
 
     def failConnect(self,obj):
 	if self.cancel:
@@ -77,8 +78,13 @@ class CanastaClient(pb.Referenceable):
 	    self.factory.getRootObject().addCallbacks(self.Connect,self.failConnect)
 
     def isController(self,obj):
-	self.connected = True
-	self.controller = obj
+	if isinstance(obj,str):
+	    print obj
+	    self.rejected = True
+	    reactor.stop()
+	else:
+	    self.connected = True
+	    self.controller = obj
 
     def getNames(self,obj):
 	obj.callRemote("Names").addCallback(self.gotNames)
@@ -92,8 +98,7 @@ class CanastaClient(pb.Referenceable):
 
     def startServer(self,obj):
 	self.oneRef = obj
-	options = CopyCanastaOptions(self.options.red3penalty,self.options.initfreeze,self.options.counttop)
-	self.oneRef.callRemote("Start",str(self.id),self.player_positions,options)
+	self.oneRef.callRemote("Start",str(self.id),self.player_positions,self.options)
 	self.start_match = True
 
     def failStart(self,obj):
@@ -123,7 +128,7 @@ class CanastaClient(pb.Referenceable):
 	self.oneRef.callRemote("takeCanastaCommand",str(self.id),self.lastplay)
 
     def clearCommand(self,obj):
-	self.lastplay=CopyCanastaCommand(NO_PLAY,[],[])
+	self.lastplay=CanastaCommand(NO_PLAY,[],[])
 
     def SendChat(self,obj):
 	if DEBUGGER: print "sending chat"
@@ -185,17 +190,21 @@ class CanastaClient(pb.Referenceable):
 	team2specials = self.g.specialPoints(2,params=True)
 
 	if team1specials[2]==8:
-	    team1specials[2]==4
+	    team1specials[2]=4
 	if team2specials[2]==8:
-	    team2specials[2]==4
+	    team2specials[2]=4
 
-	if team1specials[3]:
+	if team1specials[3]==1:
 	    team1out = "Went out first"
+	elif team1specials[3]==2:
+	    team1out = "Went out concealed"
 	else:
 	    team1out = ""
 	
-	if team2specials[3]:
+	if team2specials[3]==1:
 	    team2out = "Went out first"
+	elif team2specials[3]==2:
+	    team2out = "Went out concealed"
 	else:
 	    team2out = ""
 
@@ -381,14 +390,14 @@ class CanastaClient(pb.Referenceable):
 		    def1 = self.factory.getRootObject()
 		    def1.addCallbacks(self.stopServer)
 		elif play.action == RESIZE:
-		   self.screen = pygame.display.set_mode(play.arglist[0],HWSURFACE|RESIZABLE)
+		   self.screen = pygame.display.set_mode(play.arglist[0],RESIZABLE)
 		elif play.action == CHAT:
-		    self.lastchat = CopyCanastaCommand(play.action,play.arglist,play.token)
+		    self.lastchat = play
 		    def1 = self.factory.getRootObject()
 		    def1.addCallback(self.SendChat)		
 		elif play.action != NO_PLAY:
 		    if self.g.turn==self.g.myPos:
-			self.lastplay = CopyCanastaCommand(play.action,play.arglist,play.token)
+			self.lastplay = play
 			def1 = self.factory.getRootObject()
 			def1.addCallback(self.SendCommand)
 		self.DrawGame()
@@ -450,6 +459,7 @@ class CanastaClient(pb.Referenceable):
 
 	def OKOnClick(button):
 	    self.start_game = True
+	    self.screen = pygame.display.set_mode((1024,768),RESIZABLE)
 
 	def assignPlayer(arg):
 	    print positions
