@@ -59,7 +59,9 @@ class CanastaServer(pb.Root):
 	command = CanastaCommand(CHAT,[message],[INFO_STRING])
 	self.sendChat(command)
 
-    def remote_joinServer(self, client, name, id):
+    def remote_joinServer(self, client, name, id, version):
+	if version != VERSION:
+	    return "Error: incompatible client, this host requires version "+VERSION[0]+"."+VERSION[1]+"."+VERSION[2]
 	while name in self.players:
 	    name += "_a"
 	self.playerlist[id] = [name,False,client]
@@ -162,8 +164,7 @@ class CanastaServer(pb.Root):
 	    if isinstance(player,ComputerPlayer):
 		pass
 	    elif self.g.lastReturn:
-		back_command = CopyCanastaCommand(command.action,command.arglist,command.token)
-		player.callRemote("readCommand",back_command).addCallbacks(self.sentCommand,self.errCommand)
+		player.callRemote("readCommand",command).addCallbacks(self.sentCommand,self.errCommand)
 	if self.g.lastReturn:
 	    self.updateComputers(cur_turn)
 	if self.g.roundOver:
@@ -232,7 +233,6 @@ class CanastaServer(pb.Root):
 	"""
 	self.g.execCode(command)
 	if DEBUGGER: print [self.g.lastCommand,self.g.lastReturn]
-	back_command = CopyCanastaCommand(command.action,command.arglist,command.token)
 	if self.game_started:
 	    players = self.playerset
 	else:
@@ -240,7 +240,7 @@ class CanastaServer(pb.Root):
 	for p in players:
 	    player = self.playerlist[str(p)][2]
 	    if not isinstance(player,ComputerPlayer):
-		player.callRemote("readCommand",back_command)
+		player.callRemote("readCommand",command)
 
     def notClosed(self,obj):
 	if DEBUGGER: print ["Client did not close correctly",obj]
@@ -361,7 +361,6 @@ class CanastaServer(pb.Root):
 		pass
 	    else:
 		if DEBUGGER: print "initializing the client"
-		options = CopyCanastaOptions(options.red3penalty,options.initfreeze,options.counttop)
 		player.callRemote("initGame",self.g.playernames,pos,options)
 
     def initRound(self):
@@ -382,8 +381,7 @@ class CanastaServer(pb.Root):
 		if DEBUGGER: print "starting the client round"
 		player.callRemote("initRound")
 		if DEBUGGER: print "initializing the cards"
-		init = self.g.initStatus()
-		status = CopyCanastaInitStatus(init.meldPoints, init.curLocations, init.frozen, init.idx, init.red3penalty, init.initfreeze, init.counttop, init.playernames, init.active)
+		status = self.g.initStatus()
 		player.callRemote("readInit",status)
 	self.players_ready = [False]*4
 

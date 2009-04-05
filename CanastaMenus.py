@@ -24,8 +24,8 @@ class SetOptions:
 
     def __init__(self):
 	pygame.init() 
-	self.screen = pygame.display.set_mode((1024,768),HWSURFACE|RESIZABLE)
-	pygame.display.set_caption('Canasty - version 0.1 alpha')
+	self.screen = pygame.display.set_mode((1024,768))
+	pygame.display.set_caption('Canasty - version '+VERSION[0]+"."+VERSION[1]+"."+VERSION[2])
 
 	self.clock = pygame.time.Clock()
 	self.back = pygame.image.load("./cards/titlescreen.gif").convert()
@@ -49,9 +49,6 @@ class SetOptions:
 	self.titlepos4 = self.titletext4.get_rect()
 	self.titlepos4.centerx = 512
 	self.titlepos4.centery = 650
-
-	self.screen = pygame.display.set_mode((1024,768),HWSURFACE|RESIZABLE)
-	pygame.display.set_caption('Canasty - version 0.1 alpha')
 
     def netclient(self):
 	"""
@@ -191,20 +188,41 @@ class SetOptions:
 	def cancelOnClick(button):
 	    self.done = True
 	    self.save = False
+	def onChkValueChanged(chk):
+	    meldbonus1_txt.enabled = chk.value
+	    meldbonus2_txt.enabled = chk.value
 
 	defaultStyle.init(gui)
 	desktop_main = Desktop()
-	desktop = Window(position = (300,220), size = (400,200), parent = desktop_main, text = "Options", shadeable = False)
+	desktop = Window(position = (250,200), size = (600,300), parent = desktop_main, text = "Options", shadeable = False)
 	desktop.onClose = cancelOnClick
 
 	labelStyleCopy = gui.defaultLabelStyle.copy()
 
-	red3penalty_chk = CheckBox(position = (100,50), size = (200,0), parent = desktop, text = "Red 3 Penalty", value = options.red3penalty)
-	initfreeze_chk = CheckBox(position = (100,75), size = (200,0), parent = desktop, text = "Allow freeze on opening", value = options.initfreeze)
-	counttop_chk = CheckBox(position = (100,100), size = (200,0), parent = desktop, text = "Count pile card points in melds", value = options.counttop)
+	red3penalty_chk = CheckBox(position = (20,225), size = (200,0), parent = desktop, text = "Red 3 Penalty", value = options.red3penalty)
+	initfreeze_chk = CheckBox(position = (20,50), size = (200,0), parent = desktop, text = "Allow freeze on opening", value = options.initfreeze)
+	counttop_chk = CheckBox(position = (20,75), size = (200,0), parent = desktop, text = "Count pile card points in melds", value = options.counttop)
+	allowpass_chk = CheckBox(position = (20,100), size = (200,0), parent = desktop, text = "Allow passing with one card", value = options.allowpass)
+	negpoints_chk = CheckBox(position = (20,125), size = (200,0), parent = desktop, text = "No point threshold with negative score", value = options.negpoints)
+	concealedfree_chk = CheckBox(position = (20,150), size = (200,0), parent = desktop, text = "No minimum for concealed going out", value = options.concealedfree)
+	piletocanasta_chk = CheckBox(position = (20,175), size = (200,0), parent = desktop, text = "Allow melding pile card with existing meld", value = options.piletocanasta)
+	pilewithwild_chk = CheckBox(position = (20,200), size = (200,0), parent = desktop, text = "Allow matching unfrozen pile with a wild", value = options.pilewithwild)
 
-	OK_button = Button(position = (100,150), size = (50,0), parent = desktop, text = "OK")
-	cancel_button = Button(position = (210,150), size = (50,0), parent = desktop, text = "Cancel")
+	megamelds_chk = CheckBox(position = (350,225), size = (200,0), parent = desktop, text = "Melds of more than 7 cards", value = options.megamelds)
+	wildmeld_chk = CheckBox(position = (350,50), size = (200,0), parent = desktop, text = "Wild card melds", value = options.wildmeld)
+	wildmeld_chk.onValueChanged = onChkValueChanged
+	Label(position = (400,75),size = (50,0), parent = desktop, text = "Wild card canasta value", style = labelStyleCopy)
+	meldbonus1_txt = TextBox(position = (350,75), size = (40, 0), parent = desktop, text = "1000")
+	Label(position = (400,100),size = (50,0), parent = desktop, text = "If 0 or 4 Jokers", style = labelStyleCopy)
+	meldbonus2_txt = TextBox(position = (350,100), size = (40, 0), parent = desktop, text = "1000")
+
+	threewilds_chk = CheckBox(position = (350,125), size = (200,0), parent = desktop, text = "Limit 3 wilds in a meld", value = options.threewilds)
+	gonatural_chk = CheckBox(position = (350,150), size = (200,0), parent = desktop, text = "Pile frozen before initial meld", value = options.gonatural)
+	freezealways_chk = CheckBox(position = (350,175), size = (200,0), parent = desktop, text = "Pile always frozen", value = options.freezealways)
+	runempty_chk = CheckBox(position = (350,200), size = (200,0), parent = desktop, text = "Continued play with no stock", value = options.runempty)
+
+	OK_button = Button(position = (200,270), size = (50,0), parent = desktop, text = "OK")
+	cancel_button = Button(position = (400,270), size = (50,0), parent = desktop, text = "Cancel")
 
 	OK_button.onClick = OKOnClick
 	cancel_button.onClick = cancelOnClick
@@ -223,9 +241,9 @@ class SetOptions:
 	    self.Draw(desktop_main)
 
 	if self.save:
-	    return[red3penalty_chk.value,initfreeze_chk.value,counttop_chk.value]
+	    return CanastaOptions(red3penalty_chk.value,initfreeze_chk.value,counttop_chk.value,negpoints_chk.value,megamelds_chk.value,threewilds_chk.value,gonatural_chk.value,concealedfree_chk.value,allowpass_chk.value,runempty_chk.value,piletocanasta_chk.value,pilewithwild_chk.value,freezealways_chk.value,wildmeld_chk.value,[int(meldbonus1_txt.text),int(meldbonus2_txt.text)])
 	else:
-	    return[options.red3penalty,options.initfreeze,options.counttop]
+	    return options
 
     def Draw(self, desktop):
 
@@ -274,5 +292,5 @@ class SetOptions:
 		    if (event.pos[0] < (self.titlepos4[0]+self.titlepos4[1])) & (event.pos[0] > self.titlepos4[0]) & (event.pos[1] < (self.titlepos4[1]+self.titlepos4[3])) & (event.pos[1] > self.titlepos4[1]):
 			optset = self.Options(self.settings)
 			if optset:
-			    self.settings = CanastaOptions(optset[0],optset[1],optset[2])
+			    self.settings = optset
 			return SPLASH

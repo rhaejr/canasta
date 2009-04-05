@@ -1,9 +1,12 @@
 #! /usr/bin/python
 # -*- coding: utf-8 -*-
+# This file contains all the data objects that are copied over the network between the server and the clients.
 
 from twisted.spread import pb
 
 DEBUGGER = True
+
+VERSION = ['0','2','0']
 
 QUIT_GAME = -999
 GO_OUT = -777
@@ -34,16 +37,45 @@ CARD_KEYS = [52,53,54,55,56,57,116,106,113,107,97,119]
 IN_PILE = 1
 IS_WILD = 0
 
-class CanastaOptions:
+class CanastaOptions(pb.Copyable,pb.RemoteCopy):
     """
-    Command object that is passed to the game object to make a play.
+    Object representing possible rule variations.
     """
-    def __init__(self, red3penalty=False, initfreeze=False, counttop=False):
+    def __init__(self, red3penalty=False, initfreeze=False, counttop=False, negpoints=False, megamelds = True,threewilds=False,gonatural=False,concealedfree=False, allowpass=True, runempty=False, piletocanasta=True,pilewithwild=True,freezealways=False,wildmeld=True,wildcanastabonus=[1000,1000]):
+	#Should red 3s count negative if the turn ends before you meld?
 	self.red3penalty = red3penalty
+	#If the first card turned over after the deal is a wild, does it freeze the pile?
 	self.initfreeze = initfreeze
+	#Can you count the point value of the top pile card when making an initial meld?
 	self.counttop = counttop
 
-class CanastaCommand:
+	#Allow player to have only one card left and pass turn?
+	self.allowpass = allowpass
+	#Should going in require only 15 points if you have a negative score?
+	self.negpoints = negpoints
+	#Always force players to use two naturals to pick the pile?
+	self.freezealways = freezealways
+	#Allow taking the discard pile by adding the top card to a completed canasta?
+	self.piletocanasta = piletocanasta
+	#Allow taking the pile with a wild?
+	self.pilewithwild = pilewithwild
+	#Allow melds of more than 7 cards?
+	self.megamelds = megamelds
+	#Allow melds of all wilds? the second variable is a list giving the point value of a wild card canasta, and the value if the canasta is all 2s or has all four jokers.
+	self.wildmeld = wildmeld
+	self.wildcanastabonus = wildcanastabonus
+	#Hard limit of three wild cards in a meld? (Only relevant if megamelds=True)
+	self.threewilds = threewilds
+	#Is the discard pile frozen against you if you haven't melded? (i.e., can you pick it with a wild or not.)
+	self.gonatural = gonatural
+	#Allow concealed going out without any point requirement?
+	self.concealedfree = concealedfree
+	#let play continue with pile-picking and an empty stock?
+	self.runempty = runempty
+
+pb.setUnjellyableForClass(CanastaOptions, CanastaOptions)
+
+class CanastaCommand(pb.Copyable,pb.RemoteCopy):
     """
     Command object that is passed to the game object to make a play.
     """
@@ -58,8 +90,9 @@ class CanastaCommand:
 	    return True
 	else:
 	    return False
+pb.setUnjellyableForClass(CanastaCommand, CanastaCommand)
 
-class CanastaStatus:
+class CanastaStatus(pb.Copyable,pb.RemoteCopy):
     """
     Game status object to be read by computer players.
     """
@@ -83,50 +116,17 @@ class CanastaStatus:
 	    return True
 	else:
 	    return False
+pb.setUnjellyableForClass(CanastaStatus, CanastaStatus)
 
-class CanastaInitStatus:
+class CanastaInitStatus(pb.Copyable,pb.RemoteCopy):
     """
     Initial status object, used by the server to synchronize all the client game objects.
     """
-    def __init__(self,meldPoints,curLocations,frozen,idx,red3penalty,initfreeze,counttop,active,playernames):
+    def __init__(self,meldPoints,curLocations,frozen,idx,active,playernames):
         self.meldPoints = meldPoints
         self.curLocations = curLocations
         self.frozen = frozen
 	self.idx = idx
-	self.red3penalty = red3penalty
-	self.initfreeze = initfreeze
-	self.counttop = counttop
 	self.playernames = playernames
 	self.active = active
-
-class CopyCanastaOptions(CanastaOptions, pb.Copyable):
-    pass
-
-class ReceiverCanastaOptions(pb.RemoteCopy, CanastaOptions):
-    pass
-
-pb.setUnjellyableForClass(CopyCanastaOptions, ReceiverCanastaOptions)
-
-class CopyCanastaInitStatus(CanastaInitStatus, pb.Copyable):
-    pass
-
-class ReceiverCanastaInitStatus(pb.RemoteCopy, CanastaInitStatus):
-    pass
-
-pb.setUnjellyableForClass(CopyCanastaInitStatus, ReceiverCanastaInitStatus)
-
-class CopyCanastaCommand(CanastaCommand, pb.Copyable):
-    pass
-
-class ReceiverCanastaCommand(pb.RemoteCopy, CanastaCommand):
-    pass
-
-pb.setUnjellyableForClass(CopyCanastaCommand, ReceiverCanastaCommand)
-
-class CopyCanastaStatus(CanastaStatus, pb.Copyable):
-    pass
-
-class ReceiverCanastaStatus(pb.RemoteCopy, CanastaStatus):
-    pass
-
-pb.setUnjellyableForClass(CopyCanastaStatus, ReceiverCanastaStatus)
+pb.setUnjellyableForClass(CanastaInitStatus, CanastaInitStatus)
