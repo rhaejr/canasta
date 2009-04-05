@@ -85,8 +85,8 @@ class HumanPlayer:
 		    else:
 			ccode = MELD_CARDS
 		elif event.key in CARD_KEYS:
-		    target = tlist[CARD_KEYS.index(event.key)]
-		    ccode = target
+		    token = tlist[CARD_KEYS.index(event.key)]
+		    ccode = MELD_CARDS
 		elif event.key == 100:
 		    ccode = DRAW_CARD
 		elif event.key == 120:
@@ -267,7 +267,6 @@ class HumanPlayer:
 			    
 	    elif event.type == MOUSEBUTTONUP and self.viewhelp == 0 and (event.button !=3) & (not g.enterchat):
 		    area_locs = g.cardGroup.getCardOn(event.pos[0],event.pos[1])
-	      
 		    if self.mode == self.SELECTION_SELECTED:
 
 			if len(area_locs)>0:
@@ -285,7 +284,8 @@ class HumanPlayer:
 				if i in area_locs:
 				    if g.selectedCard != None:
 					if g.selectedCard.cancolor==0:
-					    ccode = area_locs[1] % 100
+					    ccode = MELD_CARDS
+					    token = area_locs[1] % 100
 				    else:
 					ccode = MELD_CARDS
 			    
@@ -304,10 +304,14 @@ class HumanPlayer:
 			    if (1 in area_locs) | ((event.pos[0] in range(g.curlocxy[1][0]-10,g.curlocxy[1][0]+50))  & (event.pos[1] in range(g.curlocxy[1][1],g.curlocxy[1][1]+100))):
 				ccode = DISCARD_CARD
 			    #meld
+			    elif (event.pos[0] < (g.curstagexy[0]+g.curstagexy[2])) & (event.pos[1] > (g.curstagexy[1])):
+				if event.button==1:
+				    ccode = TO_STAGE
 			    for i in range((g.curTeam())*100 + 3,(g.curTeam())*100 + 16):
 				if i in area_locs:
 				    if g.selectedCard.cancolor==0:
-					ccode = area_locs[1] % 100
+					token = area_locs[1] % 100
+					ccode = MELD_CARDS
 				    else:
 					ccode = MELD_CARDS
 			    
