@@ -651,9 +651,11 @@ class ComputerPlayer:
 				args = ["Boo-ya! got the pile!"]
 			elif (not self.goIn()):
 				action = CLEAR_STAGE
-			elif (self.meldWildExisting() != -99) & (len(wilds)>0) & (status.lastCommand not in tlist):
+			#Add a wild to an existing meld if it's close to a canasta
+			elif (self.meldWildExisting() != -99) & (len(wilds)>0) & (not status.lastToken):
 				if len(self.allCards()) > 1:
-				    action = self.meldWildExisting()
+				    action = TO_STAGE
+				    token = [self.meldWildExisting()]
 				    print ["meld wild to",action]
 				    args = [self.getWild(status)]
 				else:
