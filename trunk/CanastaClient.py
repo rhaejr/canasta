@@ -57,6 +57,7 @@ class CanastaClient(pb.Referenceable):
 	self.shutting_down = False
 	self.controller = False
 	self.id = UUID(id)
+	self.CommandQueue = []
 
     def callDebug(self,obj):
 	if DEBUGGER: obj.callRemote("debug")
@@ -150,21 +151,40 @@ class CanastaClient(pb.Referenceable):
 	    if DEBUGGER: print "client got status"
 	    self.g.readInit(status)
 	    self.initialized = True
+	    self.screen = pygame.display.set_mode((1024,768),RESIZABLE)
 
-    def remote_readCommand(self,command):
+    def remote_readCommand(self,command,local=False):
 	"""
 	Execute a command on the local game object. This function is called externally by the server.
 	The client never executes game commands without receiving instruction from the server.
 	"""
+	if self.g.animating:
+	    queued = True
+	elif self.CommandQueue:
+	    if local:
+		queued = False
+	    else:
+		queued = True
+	else:
+	    queued = False
+	print "got command",command.action
 	if command.action==CHAT:
 	    self.g.execCode(command)
-	    return
+	    return [self.g.lastCommand,self.g.lastReturn]
 	if self.g.turn==self.g.myPos:
 	    invis = False
 	else:
 	    invis = True
-	self.g.execCode(command,invisible=invis)
-	if self.g.lastReturn: 
+	if not queued:
+	    print "executing it"
+	    self.g.execCode(command,invisible=invis)
+	    retcode = self.g.lastReturn
+	    print "result was",self.g.lastReturn
+	else:
+	    print "queueing it"
+	    self.CommandQueue.append(command)
+	    retcode = True
+	if (not queued) & self.g.lastReturn: 
 	    if self.g.roundOver:
 		team1round = self.g.cardPoints(1) + self.g.specialPoints(1,params=False) - self.g.handPoints(1)
 		team2round = self.g.cardPoints(2) + self.g.specialPoints(2,params=False) - self.g.handPoints(2)
@@ -173,8 +193,8 @@ class CanastaClient(pb.Referenceable):
 		self.g.team2score += team2round
 
 	self.DrawGame()
-	self.clearCommand(None)
-	return [self.g.lastCommand,self.g.lastReturn]
+	if not queued: self.clearCommand(None)
+	return [self.g.lastCommand,retcode]
 
 
     def endRound(self):
@@ -365,6 +385,12 @@ class CanastaClient(pb.Referenceable):
 	elif self.shutting_down:
 	    pass
 	elif self.started & self.initialized:
+	    #If the client isn't animating, execute any commands waiting in the queue
+	    if (not self.g.animating):
+		try:
+		    self.remote_readCommand(self.CommandQueue.pop(0),local=True)
+		except:
+		    pass
 	    if self.g.roundOver: 
 		for event in pygame.event.get():    
 		    if event.type == MOUSEBUTTONDOWN:
@@ -400,6 +426,7 @@ class CanastaClient(pb.Referenceable):
 			self.lastplay = play
 			def1 = self.factory.getRootObject()
 			def1.addCallback(self.SendCommand)
+		if self.g.animating: self.g.animate()
 		self.DrawGame()
 	elif (not self.start_match) & (not self.controller):
 	    for event in pygame.event.get():

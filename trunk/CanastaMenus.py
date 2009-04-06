@@ -191,10 +191,12 @@ class SetOptions:
 	def onChkValueChanged(chk):
 	    meldbonus1_txt.enabled = chk.value
 	    meldbonus2_txt.enabled = chk.value
+	def animateChkValueChanged(chk):
+	    animate_txt.enabled = chk.value
 
 	defaultStyle.init(gui)
 	desktop_main = Desktop()
-	desktop = Window(position = (250,200), size = (600,300), parent = desktop_main, text = "Options", shadeable = False)
+	desktop = Window(position = (250,200), size = (600,400), parent = desktop_main, text = "Options", shadeable = False)
 	desktop.onClose = cancelOnClick
 
 	labelStyleCopy = gui.defaultLabelStyle.copy()
@@ -221,8 +223,13 @@ class SetOptions:
 	freezealways_chk = CheckBox(position = (350,175), size = (200,0), parent = desktop, text = "Pile always frozen", value = options.freezealways)
 	runempty_chk = CheckBox(position = (350,200), size = (200,0), parent = desktop, text = "Continued play with no stock", value = options.runempty)
 
-	OK_button = Button(position = (200,270), size = (50,0), parent = desktop, text = "OK")
-	cancel_button = Button(position = (400,270), size = (50,0), parent = desktop, text = "Cancel")
+	animate_chk = CheckBox(position = (250,270), size = (100,0), parent = desktop, text = "Animate cards?", value = options.wildmeld)
+	animate_chk.onValueChanged = animateChkValueChanged
+	Label(position = (250,295),size = (50,0), parent = desktop, text = "Speed:", style = labelStyleCopy)
+	animate_txt = TextBox(position = (310,295), size = (40, 0), parent = desktop, text = "30")
+
+	OK_button = Button(position = (200,370), size = (50,0), parent = desktop, text = "OK")
+	cancel_button = Button(position = (400,370), size = (50,0), parent = desktop, text = "Cancel")
 
 	OK_button.onClick = OKOnClick
 	cancel_button.onClick = cancelOnClick
@@ -240,8 +247,15 @@ class SetOptions:
 	    desktop_main.update()
 	    self.Draw(desktop_main)
 
+	if not animate_chk.value:
+	    animation = 10000
+	else:
+	    animation = int(animate_txt.text)
+	    if animation <1:
+		animation = 1
+
 	if self.save:
-	    return CanastaOptions(red3penalty_chk.value,initfreeze_chk.value,counttop_chk.value,negpoints_chk.value,megamelds_chk.value,threewilds_chk.value,gonatural_chk.value,concealedfree_chk.value,allowpass_chk.value,runempty_chk.value,piletocanasta_chk.value,pilewithwild_chk.value,freezealways_chk.value,wildmeld_chk.value,[int(meldbonus1_txt.text),int(meldbonus2_txt.text)])
+	    return CanastaOptions(red3penalty_chk.value,initfreeze_chk.value,counttop_chk.value,negpoints_chk.value,megamelds_chk.value,threewilds_chk.value,gonatural_chk.value,concealedfree_chk.value,allowpass_chk.value,runempty_chk.value,piletocanasta_chk.value,pilewithwild_chk.value,freezealways_chk.value,wildmeld_chk.value,[int(meldbonus1_txt.text),int(meldbonus2_txt.text)],animation)
 	else:
 	    return options
 

@@ -27,6 +27,8 @@ class CardGroup:
 	    if self.images:
 		c.rect.x = x;
 		c.rect.y = y;
+		c.x = x
+		c.y = y
 		c.rotated = 0
             c.backSide();
             c.selected = 0
@@ -49,7 +51,7 @@ class CardGroup:
  
     def popCard(self, card):
         self.cards.remove(card)
-        self.cards.append(card)   
+        self.cards.append(card)
         
     def getCards(self,rect):
 

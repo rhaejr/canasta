@@ -41,7 +41,7 @@ class CanastaOptions(pb.Copyable,pb.RemoteCopy):
     """
     Object representing possible rule variations.
     """
-    def __init__(self, red3penalty=False, initfreeze=False, counttop=False, negpoints=False, megamelds = True,threewilds=False,gonatural=False,concealedfree=False, allowpass=True, runempty=False, piletocanasta=True,pilewithwild=True,freezealways=False,wildmeld=True,wildcanastabonus=[1000,1000]):
+    def __init__(self, red3penalty=False, initfreeze=False, counttop=False, negpoints=False, megamelds = True,threewilds=False,gonatural=False,concealedfree=False, allowpass=True, runempty=False, piletocanasta=True,pilewithwild=True,freezealways=False,wildmeld=True,wildcanastabonus=[1000,1000],animation=30):
 	#Should red 3s count negative if the turn ends before you meld?
 	self.red3penalty = red3penalty
 	#If the first card turned over after the deal is a wild, does it freeze the pile?
@@ -72,6 +72,8 @@ class CanastaOptions(pb.Copyable,pb.RemoteCopy):
 	self.concealedfree = concealedfree
 	#let play continue with pile-picking and an empty stock?
 	self.runempty = runempty
+	#Animation speed (set to something huge for no animation)
+	self.animation = animation
 
 pb.setUnjellyableForClass(CanastaOptions, CanastaOptions)
 

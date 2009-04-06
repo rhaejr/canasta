@@ -13,6 +13,8 @@ class Card:
 	    self.rect = self.img.get_rect()
 	    self.rect.x = x
 	    self.rect.y = y
+	    self.x = x
+	    self.y = y
 	else:
 	    self.rect = None
 	self.curx = x
@@ -67,6 +69,8 @@ class Card:
 	    return
         self.rect.x += dx
         self.rect.y += dy
+	self.x += dx
+	self.y += dy
         if self.child:
             self.child.move(dx,dy)
 

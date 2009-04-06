@@ -76,7 +76,7 @@ class HumanPlayer:
 		    else:
 			ccode = MELD_CARDS
 		elif event.key in CARD_KEYS:
-		    token = tlist[CARD_KEYS.index(event.key)]
+		    token = [tlist[CARD_KEYS.index(event.key)]]
 		    ccode = MELD_CARDS
 		elif event.key == 100:
 		    ccode = DRAW_CARD
@@ -272,7 +272,7 @@ class HumanPlayer:
 				    if g.selectedCard != None:
 					if g.selectedCard.cancolor==0:
 					    ccode = MELD_CARDS
-					    token = area_locs[1] % 100
+					    token = [area_locs[1] % 100]
 				    else:
 					ccode = MELD_CARDS
 			    
@@ -297,7 +297,7 @@ class HumanPlayer:
 			    for i in range((g.curTeam())*100 + 3,(g.curTeam())*100 + 16):
 				if i in area_locs:
 				    if g.selectedCard.cancolor==0:
-					token = area_locs[1] % 100
+					token = [area_locs[1] % 100]
 					ccode = MELD_CARDS
 				    else:
 					ccode = MELD_CARDS
