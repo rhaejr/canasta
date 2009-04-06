@@ -43,13 +43,14 @@ class CanastaRound():
 	self.chatlist = []
 	self.curchat = ""
 	self.enterchat = False
+	self.animating = False
 
     def debugFunc(self):
 	if not DEBUGGER:
 	    return
         print "Selected locations"
         for c in self.selectionCards:
-            print [c.color,c.value,c.location,c.rotated,c.order]
+            print [c.color,c.value,c.location,c.rotated,c.order,[c.x,c.y],[c.rect.x,c.rect.y]]
 	print "Has Melded?"
 	print self.hasMelded()
 	print "To go in:"
@@ -192,7 +193,6 @@ class CanastaRound():
 
 	for index, c in enumerate(self.cardGroup.cards):
 	    c.order = index
-	    c.nofreeze = False
   
 	if (self.team1score < 0) & self.options.negpoints:
 	    self.minmeld1 = 15
@@ -219,6 +219,7 @@ class CanastaRound():
              
         for c in self.cardGroup.cards:
             c.location = 0
+	    c.nofreeze = False
 
         for cols in range(4):
             for hc in range(cards):
@@ -564,6 +565,34 @@ class CanastaRound():
 #Layout functions
 #############################
 
+    def animate(self):
+	rate = self.options.animation
+	did_something = False
+	for c in self.cardGroup.cards:
+	    if c.x != c.rect.x:
+		did_something = True
+		if abs(c.x-c.rect.x)<rate:
+		    c.rect.x = c.x
+		elif c.x<c.rect.x:
+		    c.rect.x -= rate
+		elif c.x>c.rect.x:
+		    c.rect.x += rate
+	    if c.y != c.rect.y:
+		did_something = True
+		if abs(c.y-c.rect.y)<rate:
+		    c.rect.y = c.y
+		elif c.y<c.rect.y:
+		    c.rect.y -= rate
+		elif c.y>c.rect.y:
+		    c.rect.y += rate
+	if not did_something:
+	    self.animating = False
+
+    def updateRect(self):
+	for c in self.cardGroup.cards:
+	    c.x = c.rect.x
+	    c.y = c.rect.y
+
     def handLayout(self):
 
         toSort = [100,200,300,400]
@@ -580,8 +609,8 @@ class CanastaRound():
                     counts[whichGroup] += 1
                     coords = self.LOCATIONS.index(c.location)
 		    if self.images:
-			c.rect.x = self.curlocxy[coords][0] + counts[whichGroup]*offsets[whichGroup][0] + row[whichGroup]*offsets2[whichGroup][0]
-			c.rect.y = self.curlocxy[coords][1] + counts[whichGroup]*offsets[whichGroup][1] + row[whichGroup]*offsets2[whichGroup][1]
+			c.x = self.curlocxy[coords][0] + counts[whichGroup]*offsets[whichGroup][0] + row[whichGroup]*offsets2[whichGroup][0]
+			c.y = self.curlocxy[coords][1] + counts[whichGroup]*offsets[whichGroup][1] + row[whichGroup]*offsets2[whichGroup][1]
                     self.selectedCards.append(c)
 
 		    if counts[whichGroup]>15:
@@ -592,6 +621,9 @@ class CanastaRound():
 	    self.selectionRect = pygame.Rect((0,0,0,0))
         self.selectedCards = []
         self.selectionCards = []
+	if self.images:
+	    self.animating = True
+	    self.animate()
 
     def meldLayout(self):
 
@@ -602,6 +634,7 @@ class CanastaRound():
         for c in self.cardGroup.cards:
             if c.location in toSort:
 		self.selectedCards.append(c)
+
 	self.sortSelection()
 	for c in self.selectedCards:
 	    whichGroup = toSort.index(c.location)
@@ -625,13 +658,15 @@ class CanastaRound():
 		    c.turn()
 
 	    if self.images:
-		c.rect.x = self.curlocxy[coords][0] + counts[whichGroup]*cur_offset[0]
-		c.rect.y = self.curlocxy[coords][1] + counts[whichGroup]*cur_offset[1]
-		
+		c.x = self.curlocxy[coords][0] + counts[whichGroup]*cur_offset[0]
+		c.y = self.curlocxy[coords][1] + counts[whichGroup]*cur_offset[1]
 	self.selectionCards = []
         self.selectedCards = []
 	if self.images & (not self.invisible):
 	    self.selectionRect = pygame.Rect((0,0,0,0))
+	if self.images:
+	    self.animating = True
+	    self.animate()
 
     def stageLayout(self):
 
@@ -648,10 +683,13 @@ class CanastaRound():
                 counts[whichGroup] += 1
                 coords = self.LOCATIONS.index(c.location)
 		if self.images:
-		    c.rect.x = self.curlocxy[coords][0] + counts[whichGroup]*offsets[whichGroup][0]
-		    c.rect.y = self.curlocxy[coords][1] + counts[whichGroup]*offsets[whichGroup][1]
+		    c.x = self.curlocxy[coords][0] + counts[whichGroup]*offsets[whichGroup][0]
+		    c.y = self.curlocxy[coords][1] + counts[whichGroup]*offsets[whichGroup][1]
 	if self.images & (not self.invisible):
 	    self.selectionRect = pygame.Rect((0,0,0,0))
+	if self.images:
+	    self.animating = True
+	    self.animate()
 
     def pileLayout(self):
 
@@ -665,8 +703,8 @@ class CanastaRound():
                 counts[whichGroup] += 1
                 coords = self.LOCATIONS.index(c.location)
 		if self.images:
-		    c.rect.x = self.curlocxy[coords][0] + counts[whichGroup]*offsets[whichGroup][0]
-		    c.rect.y = self.curlocxy[coords][1] + counts[whichGroup]*offsets[whichGroup][1]
+		    c.x = self.curlocxy[coords][0] + counts[whichGroup]*offsets[whichGroup][0]
+		    c.y = self.curlocxy[coords][1] + counts[whichGroup]*offsets[whichGroup][1]
 		if (c.location == 1):
 		    pile_count += 1
 		    if (c.side==0):
@@ -677,6 +715,9 @@ class CanastaRound():
 			c.rect.x += 20
 	if self.images & (not self.invisible):
 	    self.selectionRect = pygame.Rect((0,0,0,0))
+	if self.images:
+	    self.animating = True
+	    self.animate()
 
     def redThreeLayout(self):
 
@@ -689,10 +730,13 @@ class CanastaRound():
                 counts[whichGroup] += 1
                 coords = self.LOCATIONS.index(c.location)
 		if self.images:
-		    c.rect.x = self.curlocxy[coords][0] + counts[whichGroup]*offsets[whichGroup][0]
-		    c.rect.y = self.curlocxy[coords][1] + counts[whichGroup]*offsets[whichGroup][1]
+		    c.x = self.curlocxy[coords][0] + counts[whichGroup]*offsets[whichGroup][0]
+		    c.y = self.curlocxy[coords][1] + counts[whichGroup]*offsets[whichGroup][1]
 	if self.images & (not self.invisible):
 	    self.selectionRect = pygame.Rect((0,0,0,0))
+	if self.images:
+	    self.animating = True
+	    self.animate()
 
     def locationsUpdate(self,res):
 	"""
@@ -796,23 +840,17 @@ class CanastaRound():
                 
         self.selectionRect = r                          
         
-    def sortSelection(self):
+    def sortSelection(self,pop=True):
         if (len(self.selectedCards) > 0):
-	    if self.images:
-		rectbuf = []
-		for c in self.selectedCards:
-		    rectbuf.append(pygame.Rect(c.rect))
 
 	    self.selectedCards.sort(key=lambda obj: obj.value)            
             self.selectedCards.sort(key=lambda obj: obj.color)
 	    self.selectedCards.sort(key=lambda obj: obj.canvalue)            
             self.selectedCards.sort(key=lambda obj: obj.cancolor)
 
-	    if self.images:
-		for i in range(len(rectbuf)):
-		    self.selectedCards[i].rect = rectbuf[i]
-      
-            self.cardGroup.popCards(self.selectedCards)                            
+            if pop: 
+		for c in self.selectedCards:
+		    self.cardGroup.popCard(c)                            
 
 ############################
 #Staging and melding
@@ -923,7 +961,6 @@ class CanastaRound():
 	if len(self.selectedCards)>limit:
 	    return False
 	#If it's OK to stage/meld, set locations
-	print "valid",self.validMeld()
         if (stage | self.turnstart) & (self.validMeld()):
             cval = self.selectedNatural()
 	    if cval == 0: cval = 15

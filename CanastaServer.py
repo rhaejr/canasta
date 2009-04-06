@@ -82,8 +82,8 @@ class CanastaServer(pb.Root):
 	To prevent table talk, chatting (and all other command execution) is blocked until the partner
 	responds.
 	"""
-	if True:
-	#if self.g.canGoOut():
+
+	if self.g.canGoOut():
 	    message = self.playerlist[str(id)][0] + " asked to go out"
 	    self.infoChat(message)
 	    opp_pos = self.playerset.index(str(id)) + 2
@@ -325,7 +325,7 @@ class CanastaServer(pb.Root):
 	if DEBUGGER: print "got ready",id
 	client = self.playerlist[str(id)][2]
 	self.players_ready[self.playerset.index(str(id))] = True
-	if DEBUGGER: print self.players_ready
+	if DEBUGGER: print self.players_ready	
 
     def nextRound(self):
 	"""
