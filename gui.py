@@ -970,7 +970,7 @@ class TextBox(Widget):
         if self.currpos > len(self.text):
             self.currpos = len(self.text)
             
-        if self.hasFocus:           
+        if self.hasFocus:
             for e in events:
                 if e.type == pygame.KEYDOWN:  
                     if e.key == pygame.K_BACKSPACE:

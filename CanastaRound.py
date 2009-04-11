@@ -23,7 +23,7 @@ class CanastaRound():
     LOCATIONSXY = ((435,300),(530,300)) + ((300,650),(20,180),(300,10),(920,180)) + ((500,500),(290,115),(365,115),(440,115),(515,115),(590,115),(665,115),(290,475),(365,475),(440,475),(515,475),(590,475),(665,475)) + ((500,500),(125,200),(125,250),(125,300),(125,350),(125,400),(125,450),(795,200),(795,250),(795,300),(795,350),(795,400),(795,450)) + ((10,10),(850,665)) + ((20,600),(60,600),(100,600),(140,600),(20,670),(30,670),(40,670),(50,670),(60,670),(70,670),(80,670),(90,670),(100,670),(110,670))
     STAGEXY = (10,600,200,133)
     SCOREX = (750,0)
-    CHATX = (750,50)
+    CHATX = (745,70)
     XSCALE = 1
     YSCALE = 1
 
@@ -44,6 +44,8 @@ class CanastaRound():
 	self.curchat = ""
 	self.enterchat = False
 	self.animating = False
+	self.roundOver = False
+	self.res = (1024,768)
 
     def debugFunc(self):
 	if not DEBUGGER:
@@ -70,27 +72,6 @@ class CanastaRound():
 	"""
 	Sets up the game object for the start of a game.
 	"""
-
-        text = [
-            "Canasty v0.1",
-            "-----------------------",
-            "F1 - Display this help text.",
-            "ESC - Quit.",
-	    "Click the scoreboard to re-sort your cards",
-            "Click the pile to draw a card",
-	    "Click the discard pile to pick it up",
-	    "(first stage or select cards",
-	    "that you need to meld)",
-	    "Drag a card to the pile to discard it",
-	    "Select cards and right-click to meld",
-	    "(or drag them onto an existing meld)",
-	    "Drag melds to the stage area to stage them",
-	    "Left-click the stage to meld it",
-	    "(right-click to clear it)",
-	    "See manual for alternate keyboard controls",
-	    
-            "-----------------------",
-            "press any key to continue"]
     
         self.selectedCard = None
     
@@ -109,22 +90,6 @@ class CanastaRound():
                    
         self.cardGroup = CardGroup(ci.images,cards)
         self.cardGroup.shuffle()               
-
-	if self.images:
-	    self.helptext = pygame.Surface((400,475),1).convert()
-	    self.helptext.fill((0x0, 0x0, 0x0))
-	    self.helptext.set_alpha(200)
-	    self.helptextRect = self.helptext.get_rect()
-		
-	    font = pygame.font.Font("FreeSans.ttf", 18)
-	    ty = 8
-	    for t in text:
-	      img = font.render(t, 1, (0xff, 0xff, 0))
-	      r = img.get_rect()
-	      r.top = ty
-	      r.centerx = self.helptextRect.centerx
-	      ty += 25
-	      self.helptext.blit(img,r.topleft)
 
 	self.playernames = playernames
 	self.human = human
@@ -150,7 +115,7 @@ class CanastaRound():
 	self.team2score = 0
 	self.round = 0
     
-    def initCanasta(self):    
+    def initCanasta(self,nextround=True):    
 
 	"""
 	Initialize a round. If the game object belongs to a client, the card locations will be overwritten by the server.
@@ -168,7 +133,7 @@ class CanastaRound():
 	self.invisible = False
 	self.let_go_out = True
 
-	self.round += 1
+	if nextround: self.round += 1
 	self.turn = (self.round - 1) % 4
 
 	self.endroundtext = None
@@ -181,15 +146,18 @@ class CanastaRound():
             self.curstagexy.append(self.STAGEXY[i])
         self.curscorex = self.SCOREX[0]
         self.curscale = [self.XSCALE,self.YSCALE]
-        self.locationsUpdate((1024,768))
+        self.locationsUpdate(self.res)
 
         self.lastCommand = 0
         self.lastReturn = False
         self.lastArgs = []
         self.lastToken = []
 
-        self.cardGroup.collectAll(435,335)
+        self.cardGroup.collectAll(self.curlocxy[0][0],self.curlocxy[0][1])
         self.cardGroup.shuffle()
+        for c in self.cardGroup.cards:
+            c.location = 0
+	    c.nofreeze = False
 
 	for index, c in enumerate(self.cardGroup.cards):
 	    c.order = index
@@ -212,14 +180,12 @@ class CanastaRound():
 	else:
 	    self.minmeld2 = 120
           
+    def dealRound(self):
+
         gt = self.cardGroup.getCardAt  
                 
         cards = 11
         self.idx = 107
-             
-        for c in self.cardGroup.cards:
-            c.location = 0
-	    c.nofreeze = False
 
         for cols in range(4):
             for hc in range(cards):
@@ -306,20 +272,29 @@ class CanastaRound():
 
     def initStatus(self,active=False,fornet=False):
 
+	top_loc = None
 	locations = []
 
 	for i in range(0,108):
 	    c = self.cardGroup.cards[i]
+	    if c.isTop:
+		top_loc = c.order
 	    locations.append([c.color,c.value,c.location,c.order])
 
-	result = CanastaInitStatus([self.minmeld1,self.minmeld2],locations,self.frozen,self.idx,self.playernames,active)
+	result = CanastaInitStatus([self.minmeld1,self.minmeld2],locations,top_loc,self.frozen,self.idx,self.playernames,active,self.turn,[self.team1score,self.team2score],self.turnstart,self.myPosMelded,self.concealed,self.let_go_out)
 
 	return result
 
     def readInit(self,initStatus):
 
+	self.turn = initStatus.turn
 	self.frozen = initStatus.frozen
 	self.minmeld1, self.minmeld2 = initStatus.meldPoints
+	self.team1score, self.team2score = initStatus.teamscores
+	self.turnstart = initStatus.turnstart
+	self.myPosMelded = initStatus.myPosMelded
+	self.concealed = initStatus.concealed
+	self.let_go_out = initStatus.let_go_out
 
 	for c in self.cardGroup.cards:
 	    c.location = -1
@@ -332,6 +307,10 @@ class CanastaRound():
 		    found = True
 		    c.location = I[2]
 		    c.order = I[3]
+		    if c.order == initStatus.top_loc:
+			c.isTop = True
+			self.topPile = c.cancolor
+			self.topPileV = c.canvalue
 		    self.cardGroup.popCard(c)
 		    if c.location in [1,(self.myPos+1)*100,1000,2000]:
 			if c.side==0:
@@ -341,8 +320,6 @@ class CanastaRound():
 
 	for c in self.cardGroup.cards:
 	    if c.location == 1:
-		self.topPile = c.cancolor
-		self.topPileV = c.canvalue
 		if (c.cancolor==0) & (not self.options.initfreeze):
 		    c.nofreeze = True
 		elif (c.cancolor==0) & self.options.initfreeze:
@@ -350,13 +327,12 @@ class CanastaRound():
 		    c.nofreeze = False
 		else:
 		    c.nofreeze = False
-		c.isTop = True
+	    else:
+		c.nofreeze = False
 	
 	self.idx = initStatus.idx
 
-	self.pileLayout()
-	self.handLayout()
-	self.redThreeLayout()
+	self.allLayout()
 
 ############################
 #Internal condition functions
@@ -566,25 +542,44 @@ class CanastaRound():
 #############################
 
     def animate(self):
+	"""
+	Animate card motions. Compares the card destinations (c.x,c.y) with the current locations (c.rect.x,c.rect.y) and increments the locations if there is a discrepancy. Adjusts the relative x and y increments so that cards appear to travel in straight lines.
+
+	The layout functions set the animation flag when they are called, which in turn causes the client to call this method each time through its main loop. This method turns off the animation flag once the destinations and the locations match.
+
+	Valid only if the class was instantiated with images=True, otherwise calling this will raise an exception.
+	"""
 	rate = self.options.animation
 	did_something = False
 	for c in self.cardGroup.cards:
+	    if (abs(c.x-c.rect.x)==0) | (abs(c.y-c.rect.y)==0):
+		ratex = rate
+		ratey = rate
+	    elif abs(c.x-c.rect.x) > abs(c.y-c.rect.y):
+		ratex = rate
+		ratey = rate/(abs(c.x-c.rect.x)/abs(c.y-c.rect.y))
+	    elif abs(c.y-c.rect.y) > abs(c.x-c.rect.x):
+		ratey = rate
+		ratex = rate/(abs(c.y-c.rect.y)/abs(c.x-c.rect.x))
+	    else:
+		ratex = rate
+		ratey = rate
 	    if c.x != c.rect.x:
 		did_something = True
-		if abs(c.x-c.rect.x)<rate:
+		if abs(c.x-c.rect.x)<ratex:
 		    c.rect.x = c.x
 		elif c.x<c.rect.x:
-		    c.rect.x -= rate
+		    c.rect.x -= ratex
 		elif c.x>c.rect.x:
-		    c.rect.x += rate
+		    c.rect.x += ratex
 	    if c.y != c.rect.y:
 		did_something = True
-		if abs(c.y-c.rect.y)<rate:
+		if abs(c.y-c.rect.y)<ratey:
 		    c.rect.y = c.y
 		elif c.y<c.rect.y:
-		    c.rect.y -= rate
+		    c.rect.y -= ratey
 		elif c.y>c.rect.y:
-		    c.rect.y += rate
+		    c.rect.y += ratey
 	if not did_something:
 	    self.animating = False
 
@@ -593,6 +588,13 @@ class CanastaRound():
 	    c.x = c.rect.x
 	    c.y = c.rect.y
 
+    def allLayout(self):
+	self.handLayout()
+	self.stageLayout()
+	self.meldLayout()
+	self.pileLayout()
+	self.redThreeLayout()
+  
     def handLayout(self):
 
         toSort = [100,200,300,400]
@@ -747,6 +749,7 @@ class CanastaRound():
 	    for i in range(len(self.LOCATIONSXY)):
 		temp.append([self.LOCATIONSXY[i][0],self.LOCATIONSXY[i][1]])
 
+	    self.res = (res[0],res[1])
 	    resx = float(res[0])
 	    resy = float(res[1])
 	    scalex = float(1024)
@@ -1305,7 +1308,10 @@ class CanastaRound():
 	if token:
 	    chatline = token[0] + arglist[0] + token[0]
 	else:
+	    print "attempting to write chat",self.playernames,who,ccode,arglist,token
 	    chatline = "[" + self.playernames[who] + "] " + arglist[0]
+
+	print chatline
 
 	#DEBUGGING: use the hash-bang to print variable states in the chat window.
 	#This is a huge security hole, so it should be disabled for distribution.
@@ -1314,7 +1320,7 @@ class CanastaRound():
 		chatlines = [str(eval(arglist[0][2:len(arglist[0])]))]
 	    except:
 		chatlines = ["no such variable!"]
-	elif len(chatline)>35:
+	elif (len(chatline)>35) & (" " not in arglist[0]):
 	    chatlines = [chatline[0:33]] + [chatline[33:len(chatline)]]
 	else:
 	    chatlines = [chatline]
@@ -1353,14 +1359,6 @@ class CanastaRound():
 	    self.let_go_out = False
 	    retcode = True
 	else:
-	    popsingle = 1
-      
-	    viewhelp = 0
-	    lctrlDown = 0
-	    rctrlDown = 0
-	    lshiftDown = 0
-	    rshiftDown = 0
-
 	    if DEBUGGER: print "command",ccommand.action,ccommand.arglist,ccommand.token
 
 	    if (len(arglist)>0):
@@ -1417,6 +1415,8 @@ class CanastaRound():
 		retcode = self.PickPile()
 	    elif ccode == DISCARD_CARD:
 		retcode = self.DiscardCard()
+	    elif ccode == QUIT_GAME:
+		retcode = True
 
 	if token:
 	    if (ccode not in TLIST):

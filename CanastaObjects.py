@@ -6,9 +6,10 @@ from twisted.spread import pb
 
 DEBUGGER = True
 
-VERSION = ['0','2','0']
+VERSION = ['0','2','5']
 
 QUIT_GAME = -999
+RESET = -99
 GO_OUT = -777
 BLOCK_OUT = -770
 PASS_TURN = -1
@@ -81,7 +82,7 @@ class CanastaCommand(pb.Copyable,pb.RemoteCopy):
     """
     Command object that is passed to the game object to make a play.
     """
-    def __init__(self,action,arglist,token,retcode=None):
+    def __init__(self,action,arglist=[],token=[],retcode=None):
 	self.action = action
 	self.arglist = arglist
         self.token = token
@@ -99,6 +100,7 @@ class CanastaStatus(pb.Copyable,pb.RemoteCopy):
     Game status object to be read by computer players.
     """
     def __init__(self,meldPoints,turn,turnState,selected,curLocations,lastMelded,numcards,frozen,roundover,lastCommand,lastReturn,lastArgs,lastToken):
+
         self.meldPoints = meldPoints
         self.curTurn = turn
         self.turnState = turnState
@@ -124,11 +126,21 @@ class CanastaInitStatus(pb.Copyable,pb.RemoteCopy):
     """
     Initial status object, used by the server to synchronize all the client game objects.
     """
-    def __init__(self,meldPoints,curLocations,frozen,idx,active,playernames):
+    def __init__(self,meldPoints,curLocations,top_loc,frozen,idx,active,playernames,turn,teamscores,turnstart,myPosMelded,concealed,let_go_out):
         self.meldPoints = meldPoints
         self.curLocations = curLocations
+	self.top_loc = top_loc
         self.frozen = frozen
 	self.idx = idx
 	self.playernames = playernames
 	self.active = active
+	self.turn = turn
+	self.teamscores = teamscores
+
+	self.turnstart = turnstart
+	self.myPosMelded = myPosMelded
+	self.concealed = concealed
+	self.let_go_out = let_go_out
+
+
 pb.setUnjellyableForClass(CanastaInitStatus, CanastaInitStatus)
