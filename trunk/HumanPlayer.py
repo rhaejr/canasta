@@ -23,43 +23,40 @@ class HumanPlayer:
         self.rctrlDown = 0
         self.lshiftDown = 0
         self.rshiftDown = 0
+	self.over_window = False
 	self.mode = self.NOTHING
 
-    def getPlay(self,g):
+    def getPlay(self,g,events=None):
 	"""
 	Convert keyboard/mouse input into control codes that can be executed by the client process or the game interpreter. Cards that are selected on screen are converted into the argument list form used by the computer players and the command interpreter.
 	"""        
         ccode = NO_PLAY
 	args = []
 	token = []
-  
-	for event in pygame.event.get():
+
+	if events==None: events = pygame.event.get()
+
+	for event in events:
 	    
 	    if event.type == QUIT:
 		ccode = QUIT_GAME
-		continue
 	    elif event.type == VIDEORESIZE:
 		g.locationsUpdate(event.size)
 		ccode = RESIZE
 		args = [event.size]
-	    elif event.type == KEYDOWN:   
-
-		if self.viewhelp:
-		    ccode = NO_PLAY                    
-		    self.viewhelp=0                                              
-		elif event.key == K_ESCAPE:
-		    ccode = QUIT_GAME           
-		elif g.enterchat:
+	    elif g.enterchat:
+		if event.type == KEYDOWN:
 		    if event.key == K_RETURN:
-			if g.curchat != "":
 			    ccode = CHAT
-			    args = [g.curchat,g.myPos]
-			    g.curchat = ""
-		    elif event.key == K_BACKSPACE:
-			g.curchat = g.curchat[:-1]
-		    elif len(g.curchat)<36:
-			try:g.curchat += str(event.unicode)  
-			except:pass
+			    args = ["",g.myPos]
+			    g.curchat = None
+	    elif event.type == KEYDOWN:   
+                                            
+		if event.key == K_ESCAPE:
+		    if self.viewhelp==1:
+			self.viewhelp=0
+		    else:
+			ccode = QUIT_GAME           
 		elif event.key == K_LCTRL:
 		    self.lctrlDown = 1        
 		elif event.key == K_RCTRL:
@@ -68,6 +65,8 @@ class HumanPlayer:
 		    self.lshiftDown = 1        
 		elif event.key == K_RSHIFT:
 		    self.rshiftDown = 1   
+		elif ((self.lctrlDown==1) | (self.rctrlDown==1)) & (event.key==113):
+		    ccode = RESET
 		elif event.key == 110 and (self.lctrlDown or self.rctrlDown):  
 		    ccode = CLEAR_STAGE
 		elif event.key == 109:
@@ -86,9 +85,14 @@ class HumanPlayer:
 		    ccode = PASS_TURN
 		elif event.key == 112:
 		    ccode = PICK_PILE
-		elif event.key == K_F1:
-		    if self.mode == self.NOTHING:                      
+		elif event.key == K_F1: 
+		    if self.viewhelp == 0:
+			print "entering help"
 			self.viewhelp = 1
+		    else:
+			print "leaving help"
+			self.viewhelp = 0
+		    ccode = NO_PLAY
 		elif event.key == K_F10:
 		    g.handLayout()
 		    g.meldLayout()
@@ -152,12 +156,12 @@ class HumanPlayer:
 		elif event.key == K_RSHIFT:
 		    self.rshiftDown = 0        
 		    
-	    elif event.type == MOUSEBUTTONDOWN and self.viewhelp == 0:
-		if (event.pos[0]>g.curchatx) & (event.pos[1]>160) & (event.pos[1]<190):
-		    g.enterchat=True
-		else:
-		    g.enterchat=False
-		    self.mode = self.NOTHING
+	    elif (event.type == MOUSEBUTTONDOWN) and (not self.over_window):
+		#if (event.pos[0]>g.curchatx) & (event.pos[1]>g.CHATX[1]) & (event.pos[1]<g.CHATX[1] + 130):
+		 #   g.enterchat=True
+		#else:
+		#    g.enterchat=False
+		#   self.mode = self.NOTHING
 
 		area_locs = g.cardGroup.getCardOn(event.pos[0],event.pos[1])
 		if ((self.mode == self.DRAW_SELECTION) | (self.mode == self.SELECTION_SELECTED)) & (len(area_locs)):
@@ -252,7 +256,7 @@ class HumanPlayer:
 			else:
 			    ccode = MELD_CARDS
 			    
-	    elif event.type == MOUSEBUTTONUP and self.viewhelp == 0 and (event.button !=3) & (not g.enterchat):
+	    elif (event.type == MOUSEBUTTONUP) & (not self.over_window):
 		    area_locs = g.cardGroup.getCardOn(event.pos[0],event.pos[1])
 		    if self.mode == self.SELECTION_SELECTED:
 
@@ -346,7 +350,7 @@ class HumanPlayer:
 				    ccode = GO_OUT
 			self.mode = self.NOTHING
 			
-	    elif event.type == MOUSEMOTION and self.viewhelp == 0 & (not g.enterchat):
+	    elif (event.type == MOUSEMOTION):
 		area_locs = g.cardGroup.getCardOn(event.pos[0],event.pos[1])
 		if event.buttons[0] or event.buttons[1] or event.buttons[2]:
 		    if self.mode == self.SELECTION_SELECTED:
@@ -356,7 +360,7 @@ class HumanPlayer:
 			    for c in g.selectionCards:
 				c.move(event.rel[0],event.rel[1]);
 
-		    elif self.mode == self.SELECTION_SPREAD_INIT:
+		    elif (self.mode == self.SELECTION_SPREAD_INIT)  &  (not self.over_window):
 			self.mode = self.SELECTION_SPREAD
 
 		    elif self.mode == self.SELECTION_SPREAD:
@@ -450,6 +454,9 @@ class HumanPlayer:
 		counter += 1
 		if c in g.selectionCards:
 		    args.append(counter)
+
+	if self.viewhelp==1:
+	    ccode = NO_PLAY  
 
         command = CanastaCommand(ccode,args,token)
         return command

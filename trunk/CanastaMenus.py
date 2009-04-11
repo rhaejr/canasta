@@ -93,7 +93,6 @@ class SetOptions:
 		elif event.type == KEYDOWN and event.key == K_ESCAPE:
 		    return
 		elif event.type == KEYDOWN and event.key == 9:
-		    print desktop_main.focused is name_txt
 		    if desktop_main.focused is name_txt:
 			desktop_main.focused=host_txt
 		    elif desktop_main.focused is host_txt:
@@ -250,12 +249,19 @@ class SetOptions:
 	if not animate_chk.value:
 	    animation = 10000
 	else:
-	    animation = int(animate_txt.text)
+	    try: animation = int(animate_txt.text)
+	    except: animation = 30
 	    if animation <1:
 		animation = 1
 
 	if self.save:
-	    return CanastaOptions(red3penalty_chk.value,initfreeze_chk.value,counttop_chk.value,negpoints_chk.value,megamelds_chk.value,threewilds_chk.value,gonatural_chk.value,concealedfree_chk.value,allowpass_chk.value,runempty_chk.value,piletocanasta_chk.value,pilewithwild_chk.value,freezealways_chk.value,wildmeld_chk.value,[int(meldbonus1_txt.text),int(meldbonus2_txt.text)],animation)
+	    try: meldbonus1 = int(meldbonus1_txt.text)
+	    except: meldbonus1 = 1000
+
+	    try: meldbonus2 = int(meldbonus1_txt.text)
+	    except: meldbonus2 = 1000
+
+	    return CanastaOptions(red3penalty_chk.value,initfreeze_chk.value,counttop_chk.value,negpoints_chk.value,megamelds_chk.value,threewilds_chk.value,gonatural_chk.value,concealedfree_chk.value,allowpass_chk.value,runempty_chk.value,piletocanasta_chk.value,pilewithwild_chk.value,freezealways_chk.value,wildmeld_chk.value,[int(meldbonus1),int(meldbonus2)],animation)
 	else:
 	    return options
 
